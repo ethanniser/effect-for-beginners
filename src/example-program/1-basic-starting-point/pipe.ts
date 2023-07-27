@@ -11,17 +11,24 @@ const parsePokemon = Schema.parseEither(pokemonSchema);
 
 const getPokemon = (id: number) =>
   pipe(
-    Effect.tryPromise(() =>
-      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) => res.json())
-    ),
-    Effect.flatMap(parsePokemon)
+    Effect.tryPromise({
+      try: () =>
+        fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) =>
+          res.json()
+        ),
+      catch: () => new Error("error fetching pokemon"),
+    }),
+    Effect.flatMap((x) => parsePokemon(x))
   );
 
 const formatPokemon = (pokemon: Pokemon) =>
   `${pokemon.name} weighs ${pokemon.weight} hectograms`;
 
-const getRandomNumberArray = (length: number) =>
-  Array.from({ length }, () => Math.floor(Math.random() * 100) + 1);
+const getRandomNumberArray = Effect.all(
+  Array.from({ length: 10 }, () =>
+    Effect.sync(() => Math.floor(Math.random() * 100) + 1)
+  )
+);
 
 const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
   Effect.reduce(pokemons, 0, (highest, pokemon) =>
@@ -31,13 +38,14 @@ const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
   );
 
 const program = pipe(
-  Effect.all(getRandomNumberArray(10).map(getPokemon)),
+  getRandomNumberArray,
+  Effect.flatMap((arr) => Effect.all(arr.map(getPokemon))),
   Effect.tap((pokemons) =>
-    Effect.sync(() => console.log(pokemons.map(formatPokemon).join("\n"), "\n"))
+    Effect.log("\n" + pokemons.map(formatPokemon).join("\n"))
   ),
-  Effect.flatMap(calculateHeaviestPokemon),
-  Effect.map((heaviest) =>
-    console.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
+  Effect.flatMap((pokemons) => calculateHeaviestPokemon(pokemons)),
+  Effect.flatMap((heaviest) =>
+    Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
   )
 );
 

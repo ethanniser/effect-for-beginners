@@ -11,18 +11,18 @@ const program = Effect.gen(function* (_) {
 
 {
   // mini example
-  // returns: Effect<never, never, number>
-  const getNumber = () => Effect.succeed(Math.random() * 10);
+  // type: Effect<never, never, number>
+  const getRandomNumber = Effect.sync(() => Math.random() * 10);
 
   // returns: Effect<never, Error, number>
   const checkIfAtLeastFive = (x: number) =>
     x > 5 ? Effect.succeed(x) : Effect.fail(new Error("number is less than 5"));
 
   // returns: Effect<never, never, void>
-  const logNumber = (x: number) => Effect.sync(() => console.log(x));
+  const logNumber = (x: number) => Effect.log(x.toString());
 
   const before = pipe(
-    getNumber(),
+    getRandomNumber,
     // Effect<never, never, number>
     Effect.map((x) => x * 2),
     // Effect<never, never, number>
@@ -34,7 +34,7 @@ const program = Effect.gen(function* (_) {
 
   // type: Effect<never, Error, void>
   const after = Effect.gen(function* (_) {
-    const x = yield* _(getNumber());
+    const x = yield* _(getRandomNumber);
     const y = x * 2;
     const z = yield* _(checkIfAtLeastFive(y));
     yield* _(logNumber(z));

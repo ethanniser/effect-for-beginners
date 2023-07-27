@@ -24,13 +24,19 @@ const sync = Effect.sync(() => {
 });
 
 // An synchronous computation that may throw
-const trySync = Effect.try(() => JSON.parse(""));
+const program = Effect.try({
+  try: () => JSON.parse(""),
+  catch: (_caughtError) => new Error("JSON.parse threw an error"),
+});
 
 // Asynchronous computations
 const promise = Effect.promise(() => Promise.resolve(42));
 
 // An asynchronous computation that may reject
-const response = Effect.tryPromise(() => fetch("..."));
+const response = Effect.tryPromise({
+  try: () => fetch("..."),
+  catch: (_caughtError) => new Error("fetch rejected"),
+});
 
 // Running synchronous Effects
 {

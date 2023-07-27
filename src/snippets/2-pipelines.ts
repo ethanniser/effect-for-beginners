@@ -24,29 +24,29 @@ console.log(Effect.runSync(mappedEffect)); // Output: "1"
 const flatMappedEffect = pipe(
   Effect.succeed({ x: 5, y: 0 }),
   Effect.flatMap(({ x, y }: { x: number; y: number }) =>
-    y === 0 ? Effect.fail(new Error()) : Effect.succeed(x / y)
+    y === 0 ? Effect.fail(new Error("divide by zero")) : Effect.succeed(x / y)
   )
 );
 
 // mini example
-// returns: Effect<never, never, number>
-const getNumber = () => Effect.succeed(Math.random() * 10);
+// type: Effect<never, never, number>
+const getRandomNumber = Effect.sync(() => Math.random() * 10);
 
 // returns: Effect<never, Error, number>
 const checkIfAtLeastFive = (x: number) =>
   x > 5 ? Effect.succeed(x) : Effect.fail(new Error("number is less than 5"));
 
 // returns: Effect<never, never, void>
-const logNumber = (x: number) => Effect.sync(() => console.log(x));
+const logNumber = (x: number) => Effect.log(x.toString());
 
 const program = pipe(
-  getNumber(),
+  getRandomNumber,
   // Effect<never, never, number>
   Effect.map((x) => x * 2),
   // Effect<never, never, number>
-  Effect.flatMap(checkIfAtLeastFive),
+  Effect.flatMap((x) => checkIfAtLeastFive(x)),
   // Effect<never, Error, number>
-  Effect.flatMap(logNumber)
+  Effect.flatMap((x) => logNumber(x))
   // Effect<never, Error, void>
 );
 
@@ -55,7 +55,7 @@ const program = pipe(
 {
   const program = pipe(
     Effect.succeed(5),
-    Effect.tap(logNumber),
+    Effect.tap((x) => logNumber(x)),
     Effect.map((x) => x + 1)
   );
 }
