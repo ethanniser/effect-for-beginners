@@ -22,21 +22,34 @@ class SameWeightError {
   constructor(readonly weight: number) {}
 }
 
+// const getPokemon = (id: number) =>
+//   pipe(
+//     Effect.tryPromise({
+//       try: () => fetch(`https://pokeapi.co/api/v2/pokemon/${id}`),
+//       catch: () => new FetchError(),
+//     }),
+//     Effect.flatMap((response) =>
+//       Effect.tryPromise({
+//         try: () => response.json(),
+//         catch: () => new JSONError(),
+//       })
+//     ),
+//     Effect.flatMap((x) => parsePokemon(x)),
+//     Effect.catchAll(() => Effect.succeed({ name: "default", weight: 0 }))
+//   );
+
 const getPokemon = (id: number) =>
   Effect.gen(function* (_) {
-    const response = yield* _(
+    const res = yield* _(
       Effect.tryPromise({
-        try: () => fetch(`https://pokeapi.co/api/v2/pokemon/${id}`),
-        catch: () => new FetchError(),
+        try: () =>
+          fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then((res) =>
+            res.json()
+          ),
+        catch: () => new Error("error fetching pokemon"),
       })
     );
-    const json = yield* _(
-      Effect.tryPromise({
-        try: () => response.json(),
-        catch: () => new JSONError(),
-      })
-    );
-    return yield* _(parsePokemon(json));
+    return yield* _(parsePokemon(res));
   }).pipe(
     Effect.catchAll(() => Effect.succeed({ name: "default", weight: 0 }))
   );
@@ -44,8 +57,11 @@ const getPokemon = (id: number) =>
 const formatPokemon = (pokemon: Pokemon) =>
   `${pokemon.name} weighs ${pokemon.weight} hectograms`;
 
-const getRandomNumberArray = (length: number) =>
-  Array.from({ length }, () => Math.floor(Math.random() * 100) + 1);
+const getRandomNumberArray = Effect.all(
+  Array.from({ length: 10 }, () =>
+    Effect.sync(() => Math.floor(Math.random() * 100) + 1)
+  )
+);
 
 const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
   Effect.reduce(pokemons, 0, (highest, pokemon) =>
@@ -54,19 +70,38 @@ const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
       : Effect.succeed(pokemon.weight > highest ? pokemon.weight : highest)
   );
 
+// const program = pipe(
+//   getRandomNumberArray,
+//   Effect.flatMap((arr) => Effect.all(arr.map(getPokemon))),
+//   Effect.tap((pokemons) =>
+//     Effect.log("\n" + pokemons.map(formatPokemon).join("\n"))
+//   ),
+//   Effect.flatMap((pokemons) => calculateHeaviestPokemon(pokemons)),
+//   Effect.catchTag("SameWeightError", (e) =>
+//     Effect.log(`Two pokemon have the same weight: ${e.weight}`)
+//   ),
+//   Effect.flatMap((heaviest) =>
+//     Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
+//   )
+// );
+
 const program = Effect.gen(function* (_) {
-  const pokemons = yield* _(
-    Effect.all(getRandomNumberArray(10).map(getPokemon))
+  const arr = yield* _(getRandomNumberArray);
+  const pokemons = yield* _(Effect.all(arr.map(getPokemon)));
+  yield* _(Effect.log("\n" + pokemons.map(formatPokemon).join("\n")));
+
+  const heaviestResult = yield* _(
+    Effect.either(calculateHeaviestPokemon(pokemons))
   );
-  console.log(pokemons.map(formatPokemon).join("\n"), "\n");
-  const heaviest = yield* _(calculateHeaviestPokemon(pokemons));
-  console.log(`The heaviest pokemon weighs ${heaviest} hectograms!`);
-}).pipe(
-  Effect.catchTag("SameWeightError", (e) =>
-    Effect.sync(() =>
-      console.log(`Two pokemon have the same weight: ${e.weight}`)
-    )
-  )
-);
+
+  Effect.match(heaviestResult, {
+    onSuccess: (heaviest) =>
+      yield* _(
+        Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
+      ),
+    onFailure: (e) =>
+      yield* _(Effect.log(`Two pokemon have the same weight: ${e.weight}`)),
+  });
+});
 
 Effect.runPromise(program);

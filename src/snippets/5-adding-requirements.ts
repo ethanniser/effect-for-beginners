@@ -1,8 +1,9 @@
 import { Effect, Context, pipe } from "effect";
 
-type Random = {
-  readonly next: () => Effect.Effect<never, never, number>;
-};
+interface Random {
+  readonly _tag: "Random";
+  readonly next: Effect.Effect<never, never, number>;
+}
 
 const Random = Context.Tag<Random>();
 
@@ -10,7 +11,7 @@ const Random = Context.Tag<Random>();
 const program = pipe(
   Random,
   // "random" type: Random
-  Effect.flatMap((random) => random.next()),
+  Effect.flatMap((random) => random.next),
   Effect.flatMap((randomNumber) =>
     Effect.sync(() => console.log(`random number: ${randomNumber}`))
   )
@@ -21,7 +22,7 @@ const program = pipe(
 const runnable = program.pipe(
   Effect.provideService(
     Random,
-    Random.of({ next: () => Effect.succeed(Math.random()) })
+    Random.of({ _tag: "Random", next: Effect.sync(() => Math.random()) })
   )
 );
 
