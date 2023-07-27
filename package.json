@@ -1,0 +1,18 @@
+{
+  "name": "effect-course-1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@total-typescript/ts-reset": "^0.4.2",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "@effect/schema": "^0.30.0",
+    "effect": "2.0.0-next.19"
+  }
+}
