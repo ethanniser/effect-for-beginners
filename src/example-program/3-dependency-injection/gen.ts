@@ -62,20 +62,39 @@ const calculateHeaviestPokemon = (pokemons: Pokemon[]) =>
       : Effect.succeed(pokemon.weight > highest ? pokemon.weight : highest)
   );
 
-const program = pipe(
-  getRandomNumberArray,
-  Effect.flatMap((arr) => Effect.all(arr.map(getPokemon))),
-  Effect.tap((pokemons) =>
-    Effect.log("\n" + pokemons.map(formatPokemon).join("\n"))
-  ),
-  Effect.flatMap((pokemons) => calculateHeaviestPokemon(pokemons)),
-  Effect.catchTag("SameWeightError", (e) =>
-    Effect.log(`Two pokemon have the same weight: ${e.weight}`)
-  ),
-  Effect.flatMap((heaviest) =>
-    Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
-  )
-);
+// const program = pipe(
+//   getRandomNumberArray,
+//   Effect.flatMap((arr) => Effect.all(arr.map(getPokemon))),
+//   Effect.tap((pokemons) =>
+//     Effect.log("\n" + pokemons.map(formatPokemon).join("\n"))
+//   ),
+//   Effect.flatMap((pokemons) => calculateHeaviestPokemon(pokemons)),
+//   Effect.catchTag("SameWeightError", (e) =>
+//     Effect.log(`Two pokemon have the same weight: ${e.weight}`)
+//   ),
+//   Effect.flatMap((heaviest) =>
+//     Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
+//   )
+// );
+
+const program = Effect.gen(function* (_) {
+  const arr = yield* _(getRandomNumberArray);
+  const pokemons = yield* _(Effect.all(arr.map(getPokemon)));
+  yield* _(Effect.log("\n" + pokemons.map(formatPokemon).join("\n")));
+
+  const heaviestResult = yield* _(
+    Effect.either(calculateHeaviestPokemon(pokemons))
+  );
+
+  yield* _(
+    Effect.match(heaviestResult, {
+      onSuccess: (heaviest) =>
+        Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`),
+      onFailure: (e) =>
+        Effect.log(`Two pokemon have the same weight: ${e.weight}`),
+    })
+  );
+});
 
 program.pipe(
   Effect.provideService(PokemonClient, {

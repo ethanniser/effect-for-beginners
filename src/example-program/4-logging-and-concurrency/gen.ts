@@ -82,16 +82,14 @@ const program = Effect.gen(function* (_) {
     Effect.either(calculateHeaviestPokemon(pokemons))
   );
 
-  Effect.match(heaviestResult, {
-    onSuccess: (heaviest) =>
-      yield* _(
-        Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`)
-      ),
-    onFailure: (e) =>
-      yield* _(
-        Effect.logError(`Two pokemon have the same weight: ${e.weight}`)
-      ),
-  });
+  yield* _(
+    Effect.match(heaviestResult, {
+      onSuccess: (heaviest) =>
+        Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`),
+      onFailure: (e) =>
+        Effect.log(`Two pokemon have the same weight: ${e.weight}`),
+    })
+  );
 });
 
 Effect.runPromise(program);
