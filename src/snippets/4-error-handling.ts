@@ -21,8 +21,8 @@ class HttpError {
   constructor(readonly statusCode: number) {}
 }
 
-new DivideByZeroError();
-new HttpError(404);
+Effect.fail(new DivideByZeroError());
+Effect.fail(new HttpError(404));
 
 declare const mayError: Effect.Effect<
   never,
