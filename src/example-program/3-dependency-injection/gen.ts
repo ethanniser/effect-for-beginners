@@ -1,4 +1,4 @@
-import { Context, Effect, pipe } from "effect";
+import { Context, Effect, Either, pipe } from "effect";
 import * as Schema from "@effect/schema/Schema";
 import { ParseError } from "@effect/schema/ParseResult";
 
@@ -8,7 +8,7 @@ const pokemonSchema = Schema.struct({
 });
 
 type Pokemon = Schema.To<typeof pokemonSchema>;
-const parsePokemon = Schema.parseEither(pokemonSchema);
+const parsePokemon = Schema.parse(pokemonSchema);
 
 class FetchError {
   readonly _tag = "FetchError";
@@ -86,14 +86,19 @@ const program = Effect.gen(function* (_) {
     Effect.either(calculateHeaviestPokemon(pokemons))
   );
 
-  yield* _(
-    Effect.match(heaviestResult, {
-      onSuccess: (heaviest) =>
-        Effect.log(`The heaviest pokemon weighs ${heaviest} hectograms!`),
-      onFailure: (e) =>
-        Effect.log(`Two pokemon have the same weight: ${e.weight}`),
-    })
-  );
+  if (Either.isLeft(heaviestResult)) {
+    yield* _(
+      Effect.log(
+        `Two pokemon have the same weight: ${heaviestResult.left.weight}`
+      )
+    );
+  } else {
+    yield* _(
+      Effect.log(
+        `The heaviest pokemon weighs ${heaviestResult.right} hectograms!`
+      )
+    );
+  }
 });
 
 program.pipe(

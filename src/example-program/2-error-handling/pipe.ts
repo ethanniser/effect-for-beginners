@@ -7,7 +7,7 @@ const pokemonSchema = Schema.struct({
 });
 
 type Pokemon = Schema.To<typeof pokemonSchema>;
-const parsePokemon = Schema.parseEither(pokemonSchema);
+const parsePokemon = Schema.parse(pokemonSchema);
 
 class FetchError {
   readonly _tag = "FetchError";
