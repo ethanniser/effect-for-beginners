@@ -70,3 +70,9 @@ const combinedEffect = Effect.all([foo, bar]);
 
 console.log(Effect.runSync(combinedEffect));
 // console: [42, "Hello"]
+
+// type: Effect<never, never, { foo: number, bar: string }>
+const combinedObjectEffect = Effect.all({ foo, bar });
+
+console.log(Effect.runSync(combinedObjectEffect));
+// console: { foo: 43, bar: "Hello" }
