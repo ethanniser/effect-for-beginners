@@ -5,7 +5,7 @@ interface Random {
   readonly next: Effect.Effect<never, never, number>;
 }
 
-const Random = Context.Tag<Random>();
+const Random = Context.Tag<Random>("@app/Random");
 
 // type: Effect<Random, never, void>
 const program = pipe(

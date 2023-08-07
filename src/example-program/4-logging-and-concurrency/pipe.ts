@@ -29,7 +29,7 @@ interface PokemonClient {
     id: number
   ): Effect.Effect<never, FetchError | JSONError | ParseError, Pokemon>;
 }
-const PokemonClient = Context.Tag<PokemonClient>();
+const PokemonClient = Context.Tag<PokemonClient>("@app/PokemonClient");
 
 const getPokemon = (id: number) =>
   pipe(
